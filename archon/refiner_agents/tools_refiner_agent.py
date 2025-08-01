@@ -34,8 +34,32 @@ llm = get_env_var('PRIMARY_MODEL') or 'gpt-4o-mini'
 base_url = get_env_var('BASE_URL') or 'https://api.openai.com/v1'
 api_key = get_env_var('LLM_API_KEY') or 'no-llm-api-key-provided'
 
-model = AnthropicModel(llm, api_key=api_key) if provider == "Anthropic" else OpenAIModel(llm, base_url=base_url, api_key=api_key)
+# model = AnthropicModel(llm, api_key=api_key) if provider == "Anthropic" else OpenAIModel(llm, base_url=base_url, api_key=api_key)
+
+from pydantic_ai.providers.openai import OpenAIProvider
+
+reasoner_llm_model_name = get_env_var('PRIMARY_MODEL') or 'o3-mini'
+is_anthropic = provider == "Anthropic"
+is_openai = provider == "OpenAI"
+is_ollama = provider == "Ollama"
+
+model = (
+    AnthropicModel(reasoner_llm_model_name, api_key=api_key)
+    if is_anthropic else
+    OpenAIModel(
+        model_name=reasoner_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key=api_key)
+    )
+    if is_openai else
+    OpenAIModel(
+        model_name=reasoner_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key="adaad")
+    )
+)
+
+
 embedding_model = get_env_var('EMBEDDING_MODEL') or 'text-embedding-3-small'
+
 
 logfire.configure(send_to_logfire='if-token-present')
 

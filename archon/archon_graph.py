@@ -1,6 +1,7 @@
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.providers.openai import OpenAIProvider
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated, List, Any
@@ -41,17 +42,44 @@ api_key = get_env_var('LLM_API_KEY') or 'no-llm-api-key-provided'
 
 is_anthropic = provider == "Anthropic"
 is_openai = provider == "OpenAI"
+is_ollama = provider == "Ollama"
+
 
 reasoner_llm_model_name = get_env_var('REASONER_MODEL') or 'o3-mini'
-reasoner_llm_model = AnthropicModel(reasoner_llm_model_name, api_key=api_key) if is_anthropic else OpenAIModel(reasoner_llm_model_name, base_url=base_url, api_key=api_key)
-
+reasoner_llm_model = (
+    AnthropicModel(reasoner_llm_model_name, api_key=api_key)
+    if is_anthropic else
+    OpenAIModel(
+        model_name=reasoner_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key=api_key)
+    )
+    if is_openai else
+    OpenAIModel(
+        model_name=reasoner_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key="adaad")
+    )
+)
 reasoner = Agent(  
     reasoner_llm_model,
     system_prompt='You are an expert at coding AI agents with Pydantic AI and defining the scope for doing so.',  
 )
 
 primary_llm_model_name = get_env_var('PRIMARY_MODEL') or 'gpt-4o-mini'
-primary_llm_model = AnthropicModel(primary_llm_model_name, api_key=api_key) if is_anthropic else OpenAIModel(primary_llm_model_name, base_url=base_url, api_key=api_key)
+# primary_llm_model = AnthropicModel(primary_llm_model_name, api_key=api_key) if is_anthropic else OpenAIModel(primary_llm_model_name, base_url=base_url, api_key=api_key)
+
+primary_llm_model = (
+    AnthropicModel(primary_llm_model_name, api_key=api_key)
+    if is_anthropic else
+    OpenAIModel(
+        model_name=primary_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key=api_key)
+    )
+    if is_openai else
+    OpenAIModel(
+        model_name=primary_llm_model_name,
+        provider=OpenAIProvider(base_url=base_url, api_key="adaad")
+    )
+)
 
 router_agent = Agent(  
     primary_llm_model,
