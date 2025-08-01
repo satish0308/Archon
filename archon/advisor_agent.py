@@ -37,19 +37,20 @@ is_anthropic = provider == "Anthropic"
 is_openai = provider == "OpenAI"
 is_ollama = provider == "Ollama"
 
-model = (
-    AnthropicModel(reasoner_llm_model_name, api_key=api_key)
-    if is_anthropic else
-    OpenAIModel(
+if is_anthropic:
+    model = AnthropicModel(reasoner_llm_model_name, api_key=api_key)
+elif is_openai:
+    model = OpenAIModel(
         model_name=reasoner_llm_model_name,
         provider=OpenAIProvider(base_url=base_url, api_key=api_key)
     )
-    if is_openai else
-    OpenAIModel(
+elif is_ollama:
+    model = OpenAIModel(
         model_name=reasoner_llm_model_name,
-        provider=OpenAIProvider(base_url=base_url, api_key="adaad")
+        provider=OpenAIProvider(base_url=base_url, api_key="ollama-dummy-key")  # Ollama ignores this
     )
-)
+else:
+    raise ValueError(f"Unsupported provider: {provider}")
 print("*"*100)
 print(model)
 print(f"reasoner_llm_model_name:{reasoner_llm_model_name}")
@@ -66,6 +67,8 @@ advisor_agent = Agent(
     retries=100
 )
 
+print("**"*10)
+print(f"advisor_agent:{advisor_agent.name}")
 @advisor_agent.system_prompt  
 def add_file_list(ctx: RunContext[str]) -> str:
     joined_files = "\n".join(ctx.deps.file_list)
